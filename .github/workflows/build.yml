@@ -36,6 +36,10 @@ jobs:
           --enable-plugin=tk-inter `
           --windows-disable-console `
           --include-data-files=config.py=config.py `
+          --include-package=flet `
+          --include-package=flet_core `
+          --include-package=flet_runtime `
+          --include-module=flet_desktop `
           --output-dir=dist `
           --output-filename=BulletinPro.exe `
           --assume-yes-for-downloads `
@@ -144,7 +148,7 @@ jobs:
         Section: education
         Priority: optional
         Architecture: ${ARCH}
-        Depends: libcairo2, libpango-1.0-0, libgdk-pixbuf2.0-0
+        Depends: libcairo2, libpango-1.0-0, libpangocairo-1.0-0, libgdk-pixbuf-2.0-0 | libgdk-pixbuf2.0-0, libffi8 | libffi7 | libffi6, libc6
         Maintainer: BulletinPro Team <contact@bulletinpro.com>
         Description: Système de gestion de bulletins scolaires
          BulletinPro est une application de gestion complète pour les
