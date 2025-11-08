@@ -26,8 +26,12 @@ def build_windows():
         # Optimisations
         "--lto=yes",  # Link Time Optimization
         "--prefer-source-code",  # Meilleure compatibilité
-        # Modules à inclure
-        "--include-module=flet",
+        # Modules Flet (IMPORTANT !)
+        "--include-package=flet",
+        "--include-package=flet_core",
+        "--include-package=flet_runtime",
+        "--include-module=flet_desktop",
+        # Autres modules à inclure
         "--include-module=sqlite3",
         "--include-module=weasyprint",
         "--include-module=jinja2",
