@@ -45,10 +45,11 @@ jobs:
           Page2.py
     
     - name: Upload Windows artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: BulletinPro-Windows
         path: dist/BulletinPro.exe
+        retention-days: 7
 
   build-linux:
     runs-on: ubuntu-latest
@@ -139,16 +140,18 @@ jobs:
         mv bulletinpro-deb.deb BulletinPro-1.0.0-amd64.deb
     
     - name: Upload Linux executable
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: BulletinPro-Linux
         path: dist/BulletinPro
+        retention-days: 7
     
     - name: Upload DEB package
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: BulletinPro-DEB
         path: BulletinPro-1.0.0-amd64.deb
+        retention-days: 7
 
   create-release:
     needs: [build-windows, build-linux]
@@ -156,31 +159,21 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/')
     
     steps:
-    - name: Download Windows artifact
-      uses: actions/download-artifact@v3
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
       with:
-        name: BulletinPro-Windows
-        path: ./windows
+        path: artifacts
     
-    - name: Download Linux artifact
-      uses: actions/download-artifact@v3
-      with:
-        name: BulletinPro-Linux
-        path: ./linux
-    
-    - name: Download DEB artifact
-      uses: actions/download-artifact@v3
-      with:
-        name: BulletinPro-DEB
-        path: ./deb
+    - name: Display structure of downloaded files
+      run: ls -R artifacts
     
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
         files: |
-          ./windows/BulletinPro.exe
-          ./linux/BulletinPro
-          ./deb/BulletinPro-1.0.0-amd64.deb
+          artifacts/BulletinPro-Windows/BulletinPro.exe
+          artifacts/BulletinPro-Linux/BulletinPro
+          artifacts/BulletinPro-DEB/BulletinPro-1.0.0-amd64.deb
         draft: false
         prerelease: false
       env:
