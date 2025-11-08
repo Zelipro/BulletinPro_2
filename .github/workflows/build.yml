@@ -30,26 +30,26 @@ jobs:
     
     - name: Build Windows executable
       run: |
-        pyinstaller --name=BulletinPro ^
-          --windowed ^
-          --onefile ^
-          --icon=icon.ico ^
-          --add-data "config.py;." ^
-          --add-data ".env;." ^
-          --hidden-import=flet ^
-          --hidden-import=sqlite3 ^
-          --hidden-import=weasyprint ^
-          --hidden-import=jinja2 ^
-          --hidden-import=supabase ^
-          --hidden-import=dotenv ^
+        pyinstaller --name=BulletinPro `
+          --windowed `
+          --onefile `
+          --add-data "config.py;." `
+          --hidden-import=flet `
+          --hidden-import=sqlite3 `
+          --hidden-import=weasyprint `
+          --hidden-import=jinja2 `
+          --hidden-import=supabase `
+          --hidden-import=dotenv `
+          --hidden-import=cairocffi `
+          --hidden-import=PIL `
           Page2.py
+      shell: powershell
     
     - name: Upload Windows artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v3
       with:
         name: BulletinPro-Windows
         path: dist/BulletinPro.exe
-        retention-days: 7
 
   build-linux:
     runs-on: ubuntu-latest
@@ -88,13 +88,14 @@ jobs:
           --windowed \
           --onefile \
           --add-data "config.py:." \
-          --add-data ".env:." \
           --hidden-import=flet \
           --hidden-import=sqlite3 \
           --hidden-import=weasyprint \
           --hidden-import=jinja2 \
           --hidden-import=supabase \
           --hidden-import=dotenv \
+          --hidden-import=cairocffi \
+          --hidden-import=PIL \
           Page2.py
     
     - name: Create DEB package structure
@@ -109,7 +110,7 @@ jobs:
         chmod +x bulletinpro-deb/usr/bin/bulletinpro
         
         # Create desktop entry
-        cat > bulletinpro-deb/usr/share/applications/bulletinpro.desktop << EOF
+        cat > bulletinpro-deb/usr/share/applications/bulletinpro.desktop << 'EOF'
         [Desktop Entry]
         Name=BulletinPro
         Comment=Gestion de bulletins scolaires
@@ -121,13 +122,13 @@ jobs:
         EOF
         
         # Create control file
-        cat > bulletinpro-deb/DEBIAN/control << EOF
+        cat > bulletinpro-deb/DEBIAN/control << 'EOF'
         Package: bulletinpro
         Version: 1.0.0
         Section: education
         Priority: optional
         Architecture: amd64
-        Maintainer: Your Name <your.email@example.com>
+        Maintainer: Zelipro <contact@bulletinpro.com>
         Description: Système de gestion de bulletins scolaires
          BulletinPro est une application de gestion complète pour
          les établissements scolaires permettant de générer des
@@ -140,18 +141,16 @@ jobs:
         mv bulletinpro-deb.deb BulletinPro-1.0.0-amd64.deb
     
     - name: Upload Linux executable
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v3
       with:
         name: BulletinPro-Linux
         path: dist/BulletinPro
-        retention-days: 7
     
     - name: Upload DEB package
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v3
       with:
         name: BulletinPro-DEB
         path: BulletinPro-1.0.0-amd64.deb
-        retention-days: 7
 
   create-release:
     needs: [build-windows, build-linux]
@@ -159,21 +158,31 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/')
     
     steps:
-    - name: Download all artifacts
-      uses: actions/download-artifact@v4
+    - name: Download Windows artifact
+      uses: actions/download-artifact@v3
       with:
-        path: artifacts
+        name: BulletinPro-Windows
+        path: ./windows
     
-    - name: Display structure of downloaded files
-      run: ls -R artifacts
+    - name: Download Linux artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: BulletinPro-Linux
+        path: ./linux
+    
+    - name: Download DEB artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: BulletinPro-DEB
+        path: ./deb
     
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
         files: |
-          artifacts/BulletinPro-Windows/BulletinPro.exe
-          artifacts/BulletinPro-Linux/BulletinPro
-          artifacts/BulletinPro-DEB/BulletinPro-1.0.0-amd64.deb
+          ./windows/BulletinPro.exe
+          ./linux/BulletinPro
+          ./deb/BulletinPro-1.0.0-amd64.deb
         draft: false
         prerelease: false
       env:
