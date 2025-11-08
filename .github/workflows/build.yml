@@ -2,11 +2,11 @@ name: Build BulletinPro
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main ]
     tags:
       - 'v*'
   pull_request:
-    branches: [ main, master ]
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
@@ -15,10 +15,10 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v3
     
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v4
       with:
         python-version: '3.11'
     
@@ -28,33 +28,52 @@ jobs:
         pip install -r requirements.txt
         pip install pyinstaller
     
-    - name: Build executable
+    - name: Build Windows executable
       run: |
-        pyinstaller --clean build.spec
+        pyinstaller --name=BulletinPro ^
+          --windowed ^
+          --onefile ^
+          --icon=icon.ico ^
+          --add-data "config.py;." ^
+          --add-data ".env;." ^
+          --hidden-import=flet ^
+          --hidden-import=sqlite3 ^
+          --hidden-import=weasyprint ^
+          --hidden-import=jinja2 ^
+          --hidden-import=supabase ^
+          --hidden-import=dotenv ^
+          Page2.py
     
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
+    - name: Upload Windows artifact
+      uses: actions/upload-artifact@v3
       with:
         name: BulletinPro-Windows
         path: dist/BulletinPro.exe
-        retention-days: 30
 
   build-linux:
     runs-on: ubuntu-latest
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v3
     
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v4
       with:
         python-version: '3.11'
     
     - name: Install system dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y libgtk-3-dev libcairo2-dev libpango1.0-dev libgdk-pixbuf2.0-dev
+        sudo apt-get install -y \
+          python3-dev \
+          libcairo2-dev \
+          libpango1.0-dev \
+          libgdk-pixbuf2.0-dev \
+          libffi-dev \
+          shared-mime-info \
+          dpkg-dev \
+          fakeroot
     
     - name: Install Python dependencies
       run: |
@@ -62,47 +81,107 @@ jobs:
         pip install -r requirements.txt
         pip install pyinstaller
     
-    - name: Build executable
+    - name: Build Linux executable
       run: |
-        pyinstaller --clean build.spec
+        pyinstaller --name=BulletinPro \
+          --windowed \
+          --onefile \
+          --add-data "config.py:." \
+          --add-data ".env:." \
+          --hidden-import=flet \
+          --hidden-import=sqlite3 \
+          --hidden-import=weasyprint \
+          --hidden-import=jinja2 \
+          --hidden-import=supabase \
+          --hidden-import=dotenv \
+          Page2.py
     
-    - name: Create .deb package
+    - name: Create DEB package structure
       run: |
-        chmod +x create_deb.sh
-        ./create_deb.sh
+        mkdir -p bulletinpro-deb/DEBIAN
+        mkdir -p bulletinpro-deb/usr/bin
+        mkdir -p bulletinpro-deb/usr/share/applications
+        mkdir -p bulletinpro-deb/usr/share/icons/hicolor/256x256/apps
+        
+        # Copy executable
+        cp dist/BulletinPro bulletinpro-deb/usr/bin/bulletinpro
+        chmod +x bulletinpro-deb/usr/bin/bulletinpro
+        
+        # Create desktop entry
+        cat > bulletinpro-deb/usr/share/applications/bulletinpro.desktop << EOF
+        [Desktop Entry]
+        Name=BulletinPro
+        Comment=Gestion de bulletins scolaires
+        Exec=/usr/bin/bulletinpro
+        Icon=bulletinpro
+        Terminal=false
+        Type=Application
+        Categories=Education;Office;
+        EOF
+        
+        # Create control file
+        cat > bulletinpro-deb/DEBIAN/control << EOF
+        Package: bulletinpro
+        Version: 1.0.0
+        Section: education
+        Priority: optional
+        Architecture: amd64
+        Maintainer: Your Name <your.email@example.com>
+        Description: Système de gestion de bulletins scolaires
+         BulletinPro est une application de gestion complète pour
+         les établissements scolaires permettant de générer des
+         bulletins de notes professionnels.
+        EOF
     
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
+    - name: Build DEB package
+      run: |
+        dpkg-deb --build bulletinpro-deb
+        mv bulletinpro-deb.deb BulletinPro-1.0.0-amd64.deb
+    
+    - name: Upload Linux executable
+      uses: actions/upload-artifact@v3
       with:
         name: BulletinPro-Linux
-        path: |
-          dist/BulletinPro
-          bulletinpro_*.deb
-        retention-days: 30
+        path: dist/BulletinPro
+    
+    - name: Upload DEB package
+      uses: actions/upload-artifact@v3
+      with:
+        name: BulletinPro-DEB
+        path: BulletinPro-1.0.0-amd64.deb
 
   create-release:
     needs: [build-windows, build-linux]
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/')
     
     steps:
     - name: Download Windows artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v3
       with:
         name: BulletinPro-Windows
-        path: windows-release
+        path: ./windows
     
     - name: Download Linux artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v3
       with:
         name: BulletinPro-Linux
-        path: linux-release
+        path: ./linux
+    
+    - name: Download DEB artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: BulletinPro-DEB
+        path: ./deb
     
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
         files: |
-          windows-release/*
-          linux-release/*.deb
+          ./windows/BulletinPro.exe
+          ./linux/BulletinPro
+          ./deb/BulletinPro-1.0.0-amd64.deb
+        draft: false
+        prerelease: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
