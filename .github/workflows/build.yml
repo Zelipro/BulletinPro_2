@@ -15,10 +15,10 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.11'
     
@@ -36,6 +36,10 @@ jobs:
           --enable-plugin=tk-inter `
           --windows-disable-console `
           --include-data-files=config.py=config.py `
+          --include-package=flet `
+          --include-package=flet_core `
+          --include-package=flet_runtime `
+          --include-module=flet_desktop `
           --output-dir=dist `
           --output-filename=BulletinPro.exe `
           --assume-yes-for-downloads `
@@ -54,7 +58,7 @@ jobs:
       shell: powershell
     
     - name: Upload Windows artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: BulletinPro-Windows
         path: dist/BulletinPro.exe
@@ -65,10 +69,10 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.11'
     
@@ -144,7 +148,7 @@ jobs:
         Section: education
         Priority: optional
         Architecture: ${ARCH}
-        Depends: libcairo2, libpango-1.0-0, libgdk-pixbuf2.0-0
+        Depends: libcairo2, libpango-1.0-0, libpangocairo-1.0-0, libgdk-pixbuf-2.0-0 | libgdk-pixbuf2.0-0, libffi8 | libffi7 | libffi6, libc6
         Maintainer: BulletinPro Team <contact@bulletinpro.com>
         Description: Système de gestion de bulletins scolaires
          BulletinPro est une application de gestion complète pour les
@@ -240,14 +244,14 @@ jobs:
         dpkg-deb --info BulletinPro-${VERSION}-${ARCH}.deb
     
     - name: Upload Linux executable
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: BulletinPro-Linux
         path: dist/BulletinPro
         retention-days: 90
     
     - name: Upload DEB package
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: BulletinPro-DEB
         path: BulletinPro-*.deb
@@ -260,19 +264,19 @@ jobs:
     
     steps:
     - name: Download Windows artifact
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: BulletinPro-Windows
         path: ./windows
     
     - name: Download Linux artifact
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: BulletinPro-Linux
         path: ./linux
     
     - name: Download DEB artifact
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: BulletinPro-DEB
         path: ./deb
@@ -335,7 +339,7 @@ jobs:
     
     steps:
     - name: Download artifact
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: ${{ matrix.os == 'windows-latest' && 'BulletinPro-Windows' || 'BulletinPro-Linux' }}
     
